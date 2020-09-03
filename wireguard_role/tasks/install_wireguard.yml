@@ -17,5 +17,6 @@
       - wireguard-dkms
       - wireguard-tools
       - python2.7        
+      - iptables
     state: present
     update_cache: true
