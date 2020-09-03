@@ -3,15 +3,17 @@
   register: kernel_release
 
 - name: Add the WireGuard PPA
+  become: true
   apt_repository:
-    repo: 'ppa:wireguard/wireguard'
+    repo: 'deb http://deb.debian.org/debian buster-backports main contrib non-free'
 
 # Using with_items loop for apt module is deprecated
 - name: Install WireGuard and other requirements 
+  become: true
   apt:
     name:
       - linux-headers-{{ kernel_release.stdout }}
-      - linux-headers-generic
+        #- linux-headers-generic
       - wireguard-dkms
       - wireguard-tools
       - python2.7        

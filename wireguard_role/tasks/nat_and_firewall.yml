@@ -1,4 +1,5 @@
 - name: Enable IPv4 traffic forwarding
+  become: true
   sysctl:
     name: net.ipv4.ip_forward
     value: 1
@@ -11,6 +12,7 @@
 
 #Set up firewall rules
 - name: Track input chain
+  become: true
   iptables:
     chain: INPUT
     match: conntrack
@@ -18,6 +20,7 @@
     jump: ACCEPT
 
 - name: Track forward chain  
+  become: true
   iptables:
     chain: FORWARD
     match: conntrack
@@ -25,6 +28,7 @@
     jump: ACCEPT
 
 - name: Allow incoming wireguard connections    
+  become: true
   iptables:
     chain: INPUT
     protocol: udp
@@ -34,6 +38,7 @@
     jump: ACCEPT
    
 - name: Allow recursive DNS tcp    
+  become: true
   iptables:
     chain: INPUT
     source: "{{ vpn_network }}.0/24"
@@ -44,6 +49,7 @@
     jump: ACCEPT
   
 - name: Allow recursive DNS udp  
+  become: true
   iptables:
     chain: INPUT
     source: "{{ vpn_network }}.0/24"
@@ -54,6 +60,7 @@
     jump: ACCEPT
     
 - name: Allow forwarding of packets that stay in the tunnel 
+  become: true
   iptables:
     chain: FORWARD
     in_interface: wg0
@@ -63,6 +70,7 @@
     jump: ACCEPT
 
 - name: Set up NAT
+  become: true
   iptables:
     table: nat
     chain: POSTROUTING
@@ -71,9 +79,11 @@
     jump: MASQUERADE  
 
 - name: Install iptables-persistent
+  become: true
   apt: pkg=iptables-persistent state=present update_cache=true
 
 - name: Set up iptables persistence
+  become: true
   command: netfilter-persistent save
 
 

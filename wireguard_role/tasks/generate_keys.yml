@@ -9,23 +9,27 @@
 # will make it impossible to shut down the service in an orderly fashion!
 # You will have to manually re-create a wg0.conf file before it will exit.)
 - name: Check if wg0-server.conf already exists
+  become: true
   stat:
     path: /etc/wireguard/wg0.conf
   register: wg0_conf
 
 - name: Generate private and public keys for the client and server
+  become: true
   shell: umask 077; wg genkey | tee {{ item }}.private | wg pubkey > {{ item }}.public
   register: key_files
   with_sequence: start=0 end={{ clients }}
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 - name: Register private key file contents
+  become: true
   shell: cat {{ item }}.private
   register: private_key_files
   with_sequence: start=0 end={{ clients }}
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 - name: Register public key file contents
+  become: true
   shell: cat {{ item }}.public
   register: public_key_files
   with_sequence: start=0 end={{ clients }}
@@ -34,6 +38,7 @@
 # Client configs are traditionally named wg0-client.conf, this lets
 # us keep that scheme.
 - name: Generate directories for client configs
+  become: true
   file:
     path: "~/wg_clients/client_{{ item }}"
     state: directory
@@ -44,6 +49,7 @@
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
       
 - name: Generate client configs
+  become: true
   template:
     src: "templates/client.conf"
     dest: "~/wg_clients/client_{{ item }}/wg0-client.conf"
@@ -57,6 +63,7 @@
 # Else an already-running service will overwrite the local
 # config we are about to create when it quits
 - name: Stop any running Wireguard service
+  become: true
   systemd:
     name: wg-quick@wg0.service
     state: stopped
@@ -65,6 +72,7 @@
 
 # Sometimes systemd doesn't do the job
 - name: Stop any running Wireguard service directly
+  become: true
   shell: "wg-quick down wg0 || true"  # ignore failures
   register: wg_quick_down_out  # For debugging
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
@@ -74,6 +82,7 @@
 # server config is used to determine whether to generate the server and 
 # client config files)
 - name: Generate server config
+  become: true
   template:
     src: "templates/server.conf"
     dest: "/etc/wireguard/wg0.conf"
@@ -83,11 +92,13 @@
   when: wg0_conf.stat is not defined or wg0_conf.stat.exists == false
 
 - name: Print server public key
+  become: true
   debug:
     var: public_key_files.results[0].stdout
   when: wg0_conf.stat is not defined or wg0_conf.stat.exists == false
 
 - name: Enable wireguard interface
+  become: true
   systemd:
     name: wg-quick@wg0
     enabled: yes
@@ -95,11 +106,13 @@
   # when is omitted since state should be `started` regardless
 
 - name: Register the clients on the vpn server
+  become: true
   shell: wg set wg0 peer {{ public_key_files.results[item|int].stdout }} allowed-ips {{ vpn_network }}.{{item|int + 1}}/32
   with_sequence: start=1 end={{ clients }}
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 - name: Restart the VPN service to save changes
+  become: true
   systemd:
     name: wg-quick@wg0.service
     state: restarted

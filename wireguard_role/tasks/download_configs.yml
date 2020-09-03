@@ -1,4 +1,5 @@
 - name:  Download client configs to the "wireguard_role/profiles/" folder on your local host
+  become: true
   fetch: 
     src: "~/wg_clients/client_{{item}}/wg0-client.conf"
     dest: "{{ client_config_path }}/client_{{item}}/"

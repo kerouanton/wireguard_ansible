@@ -1,12 +1,15 @@
 - name: Install unbound
+  become: true
   apt: 
     name:
+      - ca-certificates
       - unbound
       - unbound-host
     state: present
     update_cache: true
 
 - name: Download the list of root DNS servers
+  become: true
   get_url:
     url: https://www.internic.net/domain/named.cache
     dest: /var/lib/unbound/root.hints
@@ -14,12 +17,14 @@
     group: unbound
 
 - name: Generate unbound config
+  become: true
   template:
     src: "templates/unbound.conf"
     dest: "/etc/unbound/unbound.conf"
   notify: "reboot the server"
 
 - name: Enable and start unbound service
+  become: true
   systemd:
     name: unbound
     enabled: yes
@@ -27,6 +32,7 @@
   notify: "reboot the server"
 
 - name: Set var/lib/unbound ownership
+  become: true
   file:
     path: /var/lib/unbound
     owner: unbound
@@ -34,6 +40,7 @@
     recurse: yes 
 
 - name: Turn off resolved (in Ubuntu 18.04)
+  become: true
   lineinfile:
     path: /etc/systemd/resolved.conf
     regexp: '^DNSStubListener='
@@ -43,6 +50,7 @@
   register: remove_resolved
 
 - name: Disable the resolved service (in Ubuntu 18.04)  # https://askubuntu.com/a/907249
+  become: true
   systemd:
     name: systemd-resolved.service
     enabled: no
@@ -51,6 +59,7 @@
   when: remove_resolved.changed  # Lest we make errors for those without resolved
   
 - name: Delete the resolved-symlinked resolv.conf (in Ubuntu 18.04)  # https://askubuntu.com/a/907249
+  become: true
   file:
     path: "/etc/resolv.conf"
     state: absent
@@ -62,6 +71,7 @@
 #
 # https://www.pcextreme.nl/community/d/94-unbound-local-dns-cache-on-ubuntu-and-centos
 - name: Configure the system to use the local unbound DNS (in Ubuntu 18.04)
+  become: true
   lineinfile:
     path: /etc/resolv.conf
     regexp: '^nameserver'
